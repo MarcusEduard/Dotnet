@@ -1,0 +1,98 @@
+@page "/activities"
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<h3 class="text-center my-4">Activities</h3>
+<p>Welcome to the activities page!</p>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <input type="text" class="form-control w-50" @oninput="OnSearchInput" placeholder="Search countries..." />
+
+        @if (!string.IsNullOrEmpty(searchQuery) && filteredCountries.Any())
+        {
+            <ul class="list-group position-absolute w-50" style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+                @foreach (var country in filteredCountries)
+                {
+                    <li class="list-group-item list-group-item-action" @onclick="@(() => CountrySelected(country))">@country</li>
+                }
+            </ul>
+        }
+        else if (!string.IsNullOrEmpty(searchQuery))
+        {
+            <ul class="list-group position-absolute w-50" style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <li class="list-group-item">No countries found.</li>
+            </ul>
+        }
+    </div>
+
+<div class="row justify-content-center mt-4">
+    @if (isLoading)
+    {
+        <div class="text-primary">Loading...</div>
+    }
+    else if (selectedEvents != null)
+    {
+        <h4 class="text-center w-100">Activities in @selectedCountry:</h4>
+        <div>
+            @foreach (var eventItem in selectedEvents)
+            {
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <strong>@eventItem.Name</strong><br />
+                        <em>@eventItem.Description</em><br />
+                        <img src="@eventItem.ImageUrl" alt="@eventItem.Name" width="150" /><br /><br />
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+</div>
+
+@code {
+    private string searchQuery = string.Empty;
+    private List<Event> allEvents;
+    private List<Event> selectedEvents;
+    private bool isLoading = false;
+    private string selectedCountry;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allEvents = await Http.GetFromJsonAsync<List<Event>>("http://localhost:5193/api/Activities");
+    }
+
+    private List<string> filteredCountries => allEvents
+        .Select(h => h.Country)
+        .Distinct()
+        .Where(c => c.StartsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task LoadEvents(string country)
+    {
+        selectedCountry = country;
+        selectedEvents = allEvents.Where(h => h.Country == country).ToList();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CountrySelected(string country)
+    {
+        isLoading = true;
+        await LoadEvents(country);
+    }
+
+    public class Event
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+        public string Description { get; set; }
+        public string Country { get; set; }
+    }
+}

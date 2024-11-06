@@ -1,0 +1,76 @@
+﻿@page "/"
+
+<!-- Main Layout -->
+<div class="container-fluid">
+    <!-- Header -->
+    <header class="text-center py-4">
+        <h1>BookMyStay</h1>
+        <p class="lead">Discover Top Destinations for Your Next Stay</p>
+    </header>
+
+    <!-- Popular Destinations Section -->
+    <section class="popular-destinations py-5">
+        <h3 class="text-center mb-4">Popular Destinations</h3>
+        <div class="row">
+            @foreach (var destination in GetPopularDestinations())
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card border-0 shadow">
+                        <img src="@destination.ImageUrl" class="card-img-top" alt="@destination.Name" style="height: 200px; object-fit: cover;">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">@destination.Name</h5>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Types of Accommodations Section -->
+<section class="types-of-accommodations py-5">
+    <h3 class="text-center mb-4">Types of Accommodations</h3>
+    <div class="row">
+        @foreach (var accommodation in GetAccommodationTypes())
+        {
+            <div class="col-md-3 mb-4">
+                <div class="card border-0 shadow">
+                    <img src="@accommodation.ImageUrl" class="card-img-top" alt="@accommodation.Name" style="height: 200px; object-fit: cover;">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">@accommodation.Name</h5>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+</div>
+
+<!-- Sample C# Methods to Provide Sample Data -->
+@code {
+    private List<Destination> GetPopularDestinations() => new()
+    {
+        new Destination("Paris", "paris.jpg"),
+        new Destination("New York", "new-york.jpg"),
+        new Destination("Tokyo", "Minato_City,_Tokyo.jpg"),
+        new Destination("London", "london.jpg")
+    };
+
+    private List<Accommodation> GetAccommodationTypes() => new()
+    {
+        new Accommodation("Hotel", "hotel.jpeg"),
+        new Accommodation("Apartment", "apartments.jpeg"),
+        new Accommodation("Resort", "resort.jpeg"),
+        new Accommodation("Villa", "villa.jpeg")
+    };
+
+
+    private record Destination(string Name, string ImageUrl);
+    private record Accommodation(string Name, string ImageUrl);
+}
+
+
+
+
+
+

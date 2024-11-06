@@ -1,0 +1,129 @@
+@page "/HotelBooking"
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<h3 class="text-center my-4">Explore Hotels by Country</h3>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <input type="text" class="form-control w-50" @oninput="OnSearchInput" placeholder="Search countries..." />
+
+        @if (!string.IsNullOrEmpty(searchQuery) && filteredCountries.Any())
+        {
+            <ul class="list-group position-absolute w-50" style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+                @foreach (var country in filteredCountries)
+                {
+                    <li class="list-group-item list-group-item-action" @onclick="@(() => CountrySelected(country))">@country</li>
+                }
+            </ul>
+        }
+        else if (!string.IsNullOrEmpty(searchQuery))
+        {
+            <ul class="list-group position-absolute w-50" style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <li class="list-group-item">No countries found.</li>
+            </ul>
+        }
+    </div>
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-4">
+            <label for="checkInDate">Check-in Date:</label>
+            <input type="date" id="checkInDate" @bind="checkInDate" min="@todayString" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label for="checkOutDate">Check-out Date:</label>
+            <input type="date" id="checkOutDate" @bind="checkOutDate" min="@todayString" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label for="numberOfPeople">Number of People:</label>
+            <input type="number" id="numberOfPeople" @bind="numberOfPeople" min="1" class="form-control" placeholder="Number of people" />
+        </div>
+    </div>
+
+    <div class="row justify-content-center mt-4">
+        @if (isLoading)
+        {
+            <div class="text-primary">Loading...</div>
+        }
+        else if (selectedHotels != null)
+        {
+            <h4 class="text-center w-100">Hotels in @selectedCountry:</h4>
+            <div>
+                @foreach (var hotel in selectedHotels)
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>@hotel.Name</strong><br />
+                            <em>@hotel.Description</em><br />
+                            <img src="@hotel.ImageUrl" alt="@hotel.Name" width="150" /><br /><br />
+                        </div>
+                        <button class="btn btn-primary" @onclick="() => BookHotel(hotel)">Book</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string selectedCountry;
+    private List<Hotel> selectedHotels;
+    private bool isLoading = false;
+    private string searchQuery = string.Empty;
+    private List<Hotel> allHotels;
+    private DateTime checkInDate;
+    private DateTime checkOutDate;
+    private int numberOfPeople = 1; // Default to 1 person
+    private string todayString = DateTime.Now.ToString("yyyy-MM-dd");
+
+    protected override async Task OnInitializedAsync()
+    {
+        allHotels = await Http.GetFromJsonAsync<List<Hotel>>("http://localhost:5193/api/hotels");
+    }
+
+    private List<string> filteredCountries => allHotels
+        .Select(h => h.Country)
+        .Distinct()
+        .Where(c => c.StartsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task LoadHotels(string country)
+    {
+        selectedCountry = country;
+        selectedHotels = allHotels.Where(h => h.Country == country).ToList();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CountrySelected(string country)
+    {
+        isLoading = true;
+        await LoadHotels(country);
+    }
+
+    private void BookHotel(Hotel hotel)
+    {
+        if (checkInDate == DateTime.MinValue || checkOutDate == DateTime.MinValue)
+        {
+            Console.WriteLine("Please select both check-in and check-out dates.");
+        }
+        else
+        {
+            Console.WriteLine($"Booking confirmed for {hotel.Name} in {selectedCountry} from {checkInDate:MM/dd/yyyy} to {checkOutDate:MM/dd/yyyy} for {numberOfPeople} people.");
+        }
+    }
+
+    public class Hotel
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+        public string Description { get; set; }
+        public string Country { get; set; }
+    }
+}
